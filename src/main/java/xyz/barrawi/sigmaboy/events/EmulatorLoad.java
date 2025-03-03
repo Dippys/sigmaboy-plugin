@@ -10,6 +10,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import xyz.barrawi.sigmaboy.commands.AfkCommand;
 import xyz.barrawi.sigmaboy.commands.GOTWCommand;
+import xyz.barrawi.sigmaboy.commands.GOTWResetCommand;
+import xyz.barrawi.sigmaboy.commands.TOKENCommand;
 
 import java.io.IOException;
 import java.sql.Connection;
@@ -18,7 +20,7 @@ import java.sql.SQLException;
 
 public class EmulatorLoad implements EventListener {
     private static final Logger LOGGER = LoggerFactory.getLogger(EmulatorLoad.class);
-    private static final String[] SIGMA_PERMISSIONS = {"cmd_afk", "cmd_gotw"};
+    private static final String[] SIGMA_PERMISSIONS = { "cmd_afk", "cmd_gotw", "cmd_token", "cmd_gotw_reset" };
 
     @EventHandler
     public static void onEmulatorLoaded(EmulatorLoadedEvent event) throws IOException {
@@ -35,7 +37,9 @@ public class EmulatorLoad implements EventListener {
         loadConfig();
         registerAfkCommand();
         registerGOTWCommand();
+        registerGOTWResetCommand();
         loadPlayerCommands();
+        registerTOKENCommand();
         checkAndUpdatePermissions();
     }
 
@@ -43,9 +47,17 @@ public class EmulatorLoad implements EventListener {
         try {
             CommandHandler.addCommand(new AfkCommand("cmd_afk", Emulator.getTexts().getValue("cmd.keys.cmd_afk").split(";")));
             CommandHandler.addCommand(new GOTWCommand("cmd_gotw", Emulator.getTexts().getValue("cmd.keys.cmd_gotw").split(";")));
+            CommandHandler.addCommand(new TOKENCommand("cmd_token", Emulator.getTexts().getValue("cmd.keys.cmd_token").split(";")));
+            CommandHandler.addCommand(new GOTWResetCommand("cmd_gotw_reset", Emulator.getTexts().getValue("cmd.keys.cmd_gotw_reset").split(";")));
         } catch (Exception ex) {
             LOGGER.error("Error loading player commands", ex);
         }
+    }
+
+    private static void registerGOTWResetCommand(){
+        Emulator.getTexts().register("commands.description.cmd_gotw_reset", ":gotw_reset [-dryrun / -alert] - Reset GOTW");
+        Emulator.getTexts().register("cmd.keys.cmd_gotw_reset", "gotw_reset");
+        Emulator.getTexts().register("gotw_reset.alert_message", "The Game of the Week Points has been reset for all users!");
     }
 
     private static void registerAfkCommand() {
@@ -68,6 +80,18 @@ public class EmulatorLoad implements EventListener {
         Emulator.getTexts().register("sigmaboy.cmd_gotw_cooldown", "You must wait %time% seconds before using this command again!");
     }
 
+    private static void registerTOKENCommand(){
+        Emulator.getTexts().register("commands.description.cmd_token", ":token [user] [amt](admins only) - give token points to the user");
+        Emulator.getTexts().register("cmd.keys.cmd_token", "token");
+        Emulator.getTexts().register("sigmaboy.cmd_token_bad_syntax", "Invalid syntax! Use :token username [amount]");
+        Emulator.getTexts().register("sigmaboy.cmd_token_user_not_found", "User %user% was not found or is offline!");
+        Emulator.getTexts().register("sigmaboy.cmd_token_bad_integer", "Please provide a valid positive number!");
+        Emulator.getTexts().register("sigmaboy.cmd_token_points_given", "Successfully gave %points% token points to %user%!");
+        Emulator.getTexts().register("sigmaboy.cmd_token_error", "An error occurred while executing the token command!");
+        Emulator.getTexts().register("sigmaboy.cmd_token_success", "You received %points% token points!");
+        Emulator.getTexts().register("sigmaboy.cmd_token_cooldown", "You must wait %time% seconds before using this command again!");
+    }
+
     private static void loadConfig() {
         Emulator.getConfig().register("sigmaboy.afk_effect_id", "565");
         Emulator.getConfig().register("sigmaboy.afk_update_interval_seconds", "2");
@@ -77,6 +101,11 @@ public class EmulatorLoad implements EventListener {
         Emulator.getConfig().register("sigmaboy.gotw_bypass_timer_rank", "7");
         Emulator.getConfig().register("sigmaboy.gotw_point_type", "103");
         Emulator.getConfig().register("sigmaboy.gotw_point_amt", "1");
+
+        Emulator.getConfig().register("sigmaboy.token_min_timer", "900");
+        Emulator.getConfig().register("sigmaboy.token_bypass_timer_rank", "7");
+        Emulator.getConfig().register("sigmaboy.token_point_type", "104");
+        Emulator.getConfig().register("sigmaboy.token_point_amt", "1");
     }
 
     private static void checkAndUpdatePermissions() {
